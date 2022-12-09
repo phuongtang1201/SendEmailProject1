@@ -81,7 +81,7 @@ namespace SendEmailProject1.Services
                     ex.ToString());
 
                     //Add to email history with date and status
-                    emailHistory.Date = DateTime.Today;
+                    emailHistory.Date = DateTime.Now;
                     emailHistory.Status = sendSuccess ? "success" : "failed";
 
                     await AddEmailHistory(emailHistory);
