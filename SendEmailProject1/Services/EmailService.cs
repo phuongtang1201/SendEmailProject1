@@ -24,6 +24,7 @@ namespace SendEmailProject1.Services
         
         /// <summary>
         /// Send Email service using smtp
+        /// Email credentials of sender is set up in appsettings.json
         /// </summary>
         /// <param name="request">
         /// request content:
@@ -49,7 +50,6 @@ namespace SendEmailProject1.Services
             emailHistory.Status = "not send";
 
             
-            
             email.From.Add(MailboxAddress.Parse(_config.GetSection("EmailUsername").Value));
             email.To.Add(MailboxAddress.Parse(request.Recipient));
             email.Subject = request.Subject;
@@ -69,8 +69,8 @@ namespace SendEmailProject1.Services
                     string res = await smtp.SendAsync(email);
                     sendSuccess = true;
 
-                    //Add to email history 
-                    emailHistory.Date = DateTime.Today;
+                    //Add to email history with date and status
+                    emailHistory.Date = DateTime.Now;
                     emailHistory.Status = sendSuccess ? "success" : "failed";
 
                     await AddEmailHistory(emailHistory);
@@ -80,7 +80,7 @@ namespace SendEmailProject1.Services
                     Console.WriteLine("Exception caught: {0}",
                     ex.ToString());
 
-                    //Add to email history with status of "failed"
+                    //Add to email history with date and status
                     emailHistory.Date = DateTime.Today;
                     emailHistory.Status = sendSuccess ? "success" : "failed";
 
