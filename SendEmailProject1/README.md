@@ -1,17 +1,16 @@
 ﻿
-
 Web API giving send email service.
-- Send email to recipient with option of automated or customized message.
+- Send an email to the recipient with the option of an automated or customized message.
 - To send email, call the get api "/Email"
-- If email fails to send it should either be retried until success or a max of 3 times whichever comes first, 
-and can be sent in succession or over a period of time.
-- All history details is stored via database that hosted on MongoDB cloud.
+- If email fails to send it should either be retried until success or a max of 3 times whichever comes first, and can be sent in succession.
+- All history details are stored via a database that is hosted on MongoDB cloud.
 - Can see all history by call the api "/api/Email" with Get method
 
 
 
 *To run web application
-- Clone the project using https://github.com/phuongtang1201/SendEmailProject1.git
+- Using Visual Studio
+- Clone the project: https://github.com/phuongtang1201/SendEmailProject1.git
 - Run the solution by clicking "IIS Express" button on the top bar
 
 
