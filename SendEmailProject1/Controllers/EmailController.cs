@@ -9,6 +9,7 @@ using SendEmailProject1.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SendEmailProject1.Controllers
@@ -44,7 +45,7 @@ namespace SendEmailProject1.Controllers
            //calling send email service
            var response =  _emailService.SendEmail(request);
             
-            if (response == null || !response.Result.Status.Equals("success"))
+           if (response == null || response.Result == null || !response.Result.Status.Equals("success"))
                 return StatusCode(500);
 
             return Ok(response.Result);

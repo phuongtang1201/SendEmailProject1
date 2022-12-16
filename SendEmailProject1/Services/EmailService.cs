@@ -7,7 +7,8 @@ using MailKit.Net.Smtp;
 using MimeKit.Text;
 using Microsoft.Extensions.Configuration;
 using System.Net.Http;
-
+using System.ComponentModel;
+using System.Threading;
 
 namespace SendEmailProject1.Services
 {
@@ -15,6 +16,7 @@ namespace SendEmailProject1.Services
     {
         private readonly IConfiguration _config;
         private HttpClient client = new HttpClient();
+        static bool mailSent = false;
         public EmailService(IConfiguration config)
         {
             _config = config;
@@ -36,7 +38,6 @@ namespace SendEmailProject1.Services
 
         public async Task<EmailModel> SendEmail(EmailModel request)
         {
-            
             int attempt = 0;
             bool sendSuccess = false;
             var email = new MimeMessage();
@@ -56,16 +57,28 @@ namespace SendEmailProject1.Services
             email.Body = new TextPart(TextFormat.Html) { Text = request.Body };
 
             using var smtp = new SmtpClient();
-            smtp.Connect(_config.GetSection("EmailHost").Value, 587, SecureSocketOptions.StartTls);
-            smtp.Authenticate(_config.GetSection("EmailUsername").Value,
-                _config.GetSection("EmailPassword").Value);
+            
 
             //If email fails to send, it should either be retied until success or a max of 3 times whichever comes first and cen be sent in succession
-            while (!sendSuccess && attempt <= 3)
+            while (!sendSuccess && attempt < 3)
             {
                 attempt++;
+                Console.WriteLine("Attemp " + attempt);
                 try
                 {
+                    smtp.Connect(_config.GetSection("EmailHost").Value, 587, SecureSocketOptions.StartTls);
+                    smtp.Authenticate(_config.GetSection("EmailUsername").Value,
+                        _config.GetSection("EmailPassword").Value);
+
+                    //// Set the method that is called back when the send operation ends.
+                    string message = "";
+                    smtp.MessageSent += async (sender, args) =>
+                    {
+                        message = args.Response;
+                        Console.WriteLine("MESSAGE 1 " + message);
+                    };
+                    // EventHandler<MessageSentEventArgs>(SendCompletedCallback);
+
                     string res = await smtp.SendAsync(email);
                     sendSuccess = true;
 
@@ -87,10 +100,12 @@ namespace SendEmailProject1.Services
                     await AddEmailHistory(emailHistory);
                 }
 
+                //disconnect from the client
+                smtp.Disconnect(true);
+
             }
 
-            //disconnect from the client
-            smtp.Disconnect(true);
+            
 
             //and dispose of the client object
             smtp.Dispose();
@@ -121,5 +136,6 @@ namespace SendEmailProject1.Services
 
             return false;
         }
+
     }
 }
