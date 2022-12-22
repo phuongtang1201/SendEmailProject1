@@ -10,7 +10,7 @@ using Microsoft.OpenApi.Models;
 using MongoDB.Driver;
 using SendEmailProject1.Models;
 using SendEmailProject1.Services;
-
+using System;
 
 namespace SendEmailProject1
 {
@@ -40,9 +40,15 @@ namespace SendEmailProject1
 
             services.AddSingleton<IMongoClient>(s =>
                 new MongoClient(Configuration.GetValue<string> ("EmailStoreDatabaseSettings:ConnectionString")));
+            
 
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IDatabaseService, DatabaseService>();
+
+            services.AddHttpClient<IEmailService, EmailService>(client =>
+            {
+                client.BaseAddress = new Uri("https://localhost:44338/api/");
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

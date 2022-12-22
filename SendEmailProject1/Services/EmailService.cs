@@ -7,20 +7,18 @@ using MailKit.Net.Smtp;
 using MimeKit.Text;
 using Microsoft.Extensions.Configuration;
 using System.Net.Http;
-using System.ComponentModel;
-using System.Threading;
 
 namespace SendEmailProject1.Services
 {
     public class EmailService : IEmailService
     {
         private readonly IConfiguration _config;
-        private HttpClient client = new HttpClient();
-        static bool mailSent = false;
-        public EmailService(IConfiguration config)
+        private readonly HttpClient _client;
+
+        public EmailService(IConfiguration config, HttpClient client)
         {
             _config = config;
-            client.BaseAddress = new Uri("https://localhost:44338/api/");
+            _client = client;
         }
 
         
@@ -40,9 +38,9 @@ namespace SendEmailProject1.Services
         {
             int attempt = 0;
             bool sendSuccess = false;
-            var email = new MimeMessage();
+            
 
-            //This email object will be used to call add emaill history api
+            //This email object is request body of adding emaill history api
             EmailModel emailHistory = new EmailModel();
             emailHistory.Sender = _config.GetSection("EmailUsername").Value;
             emailHistory.Recipient = request.Recipient;
@@ -50,7 +48,7 @@ namespace SendEmailProject1.Services
             emailHistory.Body = request.Body;
             emailHistory.Status = "not send";
 
-            
+            var email = new MimeMessage();
             email.From.Add(MailboxAddress.Parse(_config.GetSection("EmailUsername").Value));
             email.To.Add(MailboxAddress.Parse(request.Recipient));
             email.Subject = request.Subject;
@@ -59,7 +57,7 @@ namespace SendEmailProject1.Services
             using var smtp = new SmtpClient();
             
 
-            //If email fails to send, it should either be retied until success or a max of 3 times whichever comes first and cen be sent in succession
+            //If email fails to send, it should either be retried until success or a max of 3 times whichever comes first and can be sent in succession
             while (!sendSuccess && attempt < 3)
             {
                 attempt++;
@@ -70,17 +68,16 @@ namespace SendEmailProject1.Services
                     smtp.Authenticate(_config.GetSection("EmailUsername").Value,
                         _config.GetSection("EmailPassword").Value);
 
-                    //// Set the method that is called back when the send operation ends.
+                    //// Set the method that is called back when sending email succesfully.
                     string message = "";
                     smtp.MessageSent += async (sender, args) =>
                     {
                         message = args.Response;
                         Console.WriteLine("MESSAGE 1 " + message);
+                        sendSuccess = true;
                     };
-                    // EventHandler<MessageSentEventArgs>(SendCompletedCallback);
 
                     string res = await smtp.SendAsync(email);
-                    sendSuccess = true;
 
                     //Add to email history with date and status
                     emailHistory.Date = DateTime.Now;
@@ -90,8 +87,7 @@ namespace SendEmailProject1.Services
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Exception caught: {0}",
-                    ex.ToString());
+                    Console.WriteLine("Exception caught: {0}", ex.ToString());
 
                     //Add to email history with date and status
                     emailHistory.Date = DateTime.Now;
@@ -105,36 +101,31 @@ namespace SendEmailProject1.Services
 
             }
 
-            
-
-            //and dispose of the client object
-            smtp.Dispose();
-
             return emailHistory;
         }
 
 
         // Add email history to database
-        public async Task<bool> AddEmailHistory(EmailModel request)
+        private async Task<bool> AddEmailHistory(EmailModel request)
         {
             try
             {
                 //Call post api "/EmailHistory"
-                var response = client.PostAsJsonAsync("EmailHistory", request).GetAwaiter().GetResult();
+                var response = await _client.PostAsJsonAsync("EmailHistory", request);
+
                 if (response.IsSuccessStatusCode)
                 {
-                    var responseContent = response.Content;
                     return response.IsSuccessStatusCode;
                 }
 
             }
             catch (Exception ex)
             {
-                Console.WriteLine(
-                    ex.ToString());
+                Console.WriteLine(ex.ToString());
             }
 
             return false;
+
         }
 
     }
